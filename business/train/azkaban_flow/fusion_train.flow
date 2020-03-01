@@ -1,0 +1,64 @@
+---
+# 全局参数，不要修改
+config:
+    # 报警邮箱
+    # failure.emails:
+    failure.emails:
+    # 任务启动用户
+    user.to.proxy:
+    # 代码目录
+    code_path: /usr/local/
+    # python虚拟环境
+    python: /home/bin/python
+
+nodes:
+    # 开始
+    - name: start
+      type: command
+      config:
+        command: echo "开始分类预测的模型训练"
+
+    # new 新品预测 ETL
+    - name: new_product_etl
+      type: command
+      dependsOn:
+        - start
+      config:
+        command: ${python} ${code_path}/business/train/etl.py
+
+    # new 新品预测 模型训练
+    - name: new_product_model_train
+      type: command
+      dependsOn:
+        - new_product_etl
+      config:
+        command: ${python} ${code_path}/business/train/feature.py
+
+    # normal 常规商品预测 ETL
+    - name: normal_product_etl
+      type: command
+      dependsOn:
+        - start
+      config:
+        command: ${python} ${code_path}/business/train/train.py
+
+    # normal 常规商品预测 模型训练
+    - name: normal_product_model_train
+      type: command
+      dependsOn:
+        - normal_product_etl
+      config:
+        command: ${python} ${code_path}/business/train/model.py
+
+
+    # 结束，所有节点都必须最终能执行end
+    - name: end
+      type: command
+      dependsOn:
+        - new_product_model_train
+        - normal_product_model_train
+      config:
+        command: echo "结束了"
+
+
+
